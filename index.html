@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>おかいものゲーム（レベル選択版）</title>
+    <title>おかいものゲーム</title>
     <style>
         /* --- 基本設定 --- */
         body {
@@ -41,9 +41,12 @@
             background-color: #ffe4b5;
             border-bottom: 5px solid #deb887;
             position: relative;
+            /* グリッド配置のためにpaddingを少し設定 */
+            padding: 10px;
+            box-sizing: border-box;
         }
 
-        /* --- 中央エリア（お題とボタン） --- */
+        /* --- 中央エリア --- */
         #center-area {
             height: 90px;
             background-color: #fff;
@@ -84,7 +87,6 @@
 
         /* --- カゴエリア --- */
         #basket-area {
-            /* 初級用（デフォルト）の高さ */
             height: 200px;
             background-color: #e0ffff;
             position: relative;
@@ -98,7 +100,7 @@
         #basket {
             width: 85%;
             max-width: 650px;
-            height: 180px; /* デフォルト */
+            height: 180px;
             border: 8px solid #8b4513;
             border-radius: 0 0 30px 30px;
             border-top: none;
@@ -140,6 +142,8 @@
             z-index: 100;
             filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
             touch-action: none;
+            /* 配置時のアニメーション */
+            transition: transform 0.1s, top 0.3s, left 0.3s;
         }
 
         .item-in-basket {
@@ -155,20 +159,20 @@
             animation: popIn 0.2s ease-out;
         }
 
-        /* ====== 中級（Hard）モード用のスタイル上書き ====== */
+        /* ====== 中級（Hard）モード用のスタイル ====== */
         body.mode-hard #basket-area {
-            height: 260px; /* カゴエリアを広く */
+            height: 260px;
         }
         body.mode-hard #basket {
-            height: 240px; /* カゴ自体も高く */
+            height: 240px;
         }
         body.mode-hard .item {
-            width: 55px; /* アイテムを小さく */
+            width: 55px;
             height: 55px;
             font-size: 40px;
         }
         body.mode-hard .item-in-basket {
-            width: 45px; /* カゴに入った時も小さく */
+            width: 45px;
             height: 45px;
             font-size: 30px;
             margin: 1px;
@@ -188,7 +192,6 @@
         .overlay h1 { color: #ff4500; font-size: 40px; margin-bottom: 20px; text-align: center; }
         .overlay p { font-size: 20px; color: #555; margin-bottom: 40px; }
 
-        /* ボタン群 */
         .btn-group {
             display: flex;
             gap: 20px;
@@ -251,8 +254,8 @@
     <h1>おかいもの<br>ゲーム</h1>
     <p>むずかしさを えらんでね</p>
     <div class="btn-group">
-        <button class="modal-btn" onclick="startGame('easy')">初級<br><span style="font-size:16px">(1〜4こ)</span></button>
-        <button class="modal-btn secondary" onclick="startGame('hard')">中級<br><span style="font-size:16px">(5〜10こ)</span></button>
+        <button class="modal-btn" onclick="startGame('easy')">初級<br><span style="font-size:16px">(1〜5こ)</span></button>
+        <button class="modal-btn secondary" onclick="startGame('hard')">中級<br><span style="font-size:16px">(6〜10こ)</span></button>
     </div>
 </div>
 
@@ -267,34 +270,21 @@
 </div>
 
 <script>
-    // --- 豊富なアイテムデータ ---
     const itemsData = [
-        // 果物
-        { id: 'apple', icon: '🍎', name: 'りんご' },
-        { id: 'banana', icon: '🍌', name: 'バナナ' },
-        { id: 'grape', icon: '🍇', name: 'ぶどう' },
-        { id: 'strawberry', icon: '🍓', name: 'いちご' },
-        { id: 'peach', icon: '🍑', name: 'もも' },
-        { id: 'melon', icon: '🍈', name: 'メロン' },
-        // 野菜
-        { id: 'carrot', icon: '🥕', name: 'にんじん' },
-        { id: 'broccoli', icon: '🥦', name: 'ブロッコリー' },
-        { id: 'corn', icon: '🌽', name: 'とうもろこし' },
-        { id: 'tomato', icon: '🍅', name: 'トマト' },
-        { id: 'eggplant', icon: '🍆', name: 'なす' },
-        // 食べ物・お菓子
-        { id: 'burger', icon: '🍔', name: 'ハンバーガー' },
-        { id: 'fries', icon: '🍟', name: 'ポテト' },
-        { id: 'cake', icon: '🍰', name: 'ケーキ' },
-        { id: 'icecream', icon: '🍦', name: 'アイス' },
-        { id: 'donut', icon: '🍩', name: 'ドーナツ' },
-        { id: 'pudding', icon: '🍮', name: 'プリン' },
-        { id: 'cookie', icon: '🍪', name: 'クッキー' }
+        { id: 'apple', icon: '🍎', name: 'りんご' }, { id: 'banana', icon: '🍌', name: 'バナナ' },
+        { id: 'grape', icon: '🍇', name: 'ぶどう' }, { id: 'strawberry', icon: '🍓', name: 'いちご' },
+        { id: 'peach', icon: '🍑', name: 'もも' }, { id: 'melon', icon: '🍈', name: 'メロン' },
+        { id: 'carrot', icon: '🥕', name: 'にんじん' }, { id: 'broccoli', icon: '🥦', name: 'ブロッコリー' },
+        { id: 'corn', icon: '🌽', name: 'とうもろこし' }, { id: 'tomato', icon: '🍅', name: 'トマト' },
+        { id: 'eggplant', icon: '🍆', name: 'なす' }, { id: 'burger', icon: '🍔', name: 'ハンバーガー' },
+        { id: 'fries', icon: '🍟', name: 'ポテト' }, { id: 'cake', icon: '🍰', name: 'ケーキ' },
+        { id: 'icecream', icon: '🍦', name: 'アイス' }, { id: 'donut', icon: '🍩', name: 'ドーナツ' },
+        { id: 'pudding', icon: '🍮', name: 'プリン' }, { id: 'cookie', icon: '🍪', name: 'クッキー' }
     ];
 
     const MAX_QUESTIONS = 5;
     let questionIndex = 0;
-    let currentMode = 'easy'; // 'easy' or 'hard'
+    let currentMode = 'easy';
     
     let currentTargetItem = null;
     let targetCount = 3;
@@ -308,7 +298,6 @@
     const finalScreen = document.getElementById('final-screen');
     const stars = document.querySelectorAll('.star');
 
-    // --- 音声関連 ---
     const synth = window.speechSynthesis;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -329,32 +318,24 @@
         osc.start(); osc.stop(audioCtx.currentTime + duration);
     }
 
-    // --- ゲーム進行 ---
     function startGame(mode) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
-        
         currentMode = mode;
-        
-        // モードに応じたスタイル適用（bodyにクラス付与）
         if (currentMode === 'hard') {
             document.body.classList.add('mode-hard');
         } else {
             document.body.classList.remove('mode-hard');
         }
-
         startScreen.style.display = 'none';
         questionIndex = 0;
         updateStars();
-        
         const modeName = currentMode === 'easy' ? "初級" : "中級";
         speak(`${modeName}コース、スタート！`);
-        
         loadQuestion();
     }
 
     function returnToTitle() {
         finalScreen.style.display = 'none';
-        // 紙吹雪を削除
         document.querySelectorAll('.confetti').forEach(e => e.remove());
         startScreen.style.display = 'flex';
     }
@@ -364,15 +345,16 @@
         basketContainer.innerHTML = '';
         itemsInBasket = 0;
 
-        // お題決定
         const randomIdx = Math.floor(Math.random() * itemsData.length);
         currentTargetItem = itemsData[randomIdx];
 
-        // ★モードによる個数分岐
+        // ★変更点2：問題数の範囲を変更
         if (currentMode === 'easy') {
-            targetCount = Math.floor(Math.random() * 4) + 1; // 1~4個
+            // 1〜5個
+            targetCount = Math.floor(Math.random() * 5) + 1;
         } else {
-            targetCount = Math.floor(Math.random() * 6) + 5; // 5~10個
+            // 6〜10個
+            targetCount = Math.floor(Math.random() * 5) + 6;
         }
 
         document.getElementById('target-icon').textContent = currentTargetItem.icon;
@@ -391,16 +373,43 @@
         });
     }
 
+    // ★変更点3：重なり防止のためのグリッド配置ロジック
     function spawnItems() {
-        // ★モードによる棚の総数分岐
-        // 初級なら少なめ(10-12)、中級なら多め(20-25)
-        const totalItems = currentMode === 'easy' ? 12 : 25;
+        const isEasy = (currentMode === 'easy');
+        // 生成する総数（初級12個、中級25個）
+        const totalItemsToSpawn = isEasy ? 12 : 25;
         
-        // 正解が足りなくならないように保証する数
-        let targetSpawns = targetCount + 2; 
-        if(targetSpawns > totalItems) targetSpawns = totalItems;
+        // グリッドのセルサイズ設定（アイテムサイズ + 余白）
+        // 初級:75px+余白, 中級:55px+余白
+        const cellSize = isEasy ? 90 : 70; 
 
-        for (let i = 0; i < totalItems; i++) {
+        // 棚のサイズから配置可能な列数・行数を計算
+        // padding分を引いて計算
+        const shelfW = shelfArea.clientWidth - 20; 
+        const shelfH = shelfArea.clientHeight - 20;
+        const cols = Math.floor(shelfW / cellSize);
+        const rows = Math.floor(shelfH / cellSize);
+        const maxSlots = cols * rows;
+
+        // 実際に生成する数（マスの数を超えないように制限）
+        const actualItems = Math.min(totalItemsToSpawn, maxSlots);
+
+        // 1. 全ての可能なマスのリストを作成
+        let availableSlots = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                availableSlots.push({ r: r, c: c });
+            }
+        }
+        // マスをシャッフルしてランダムに選べるようにする
+        shuffleArray(availableSlots);
+
+        // 正解アイテムの最低保証数
+        let targetSpawns = targetCount + 2;
+        if (targetSpawns > actualItems) targetSpawns = actualItems;
+
+        for (let i = 0; i < actualItems; i++) {
+            // アイテムの種類決定
             const isTarget = (i < targetSpawns);
             let itemType;
             if (isTarget) {
@@ -410,25 +419,43 @@
                     itemType = itemsData[Math.floor(Math.random() * itemsData.length)];
                 } while(itemType.id === currentTargetItem.id);
             }
-            createItem(itemType);
+
+            // 2. シャッフルしたリストからマスを1つ取り出す（これで重ならない）
+            const slot = availableSlots.pop();
+            
+            // マスの中での座標計算（少しランダムにずらして自然に見せる）
+            // 全体を中央寄せするための余白計算
+            const startX = (shelfW - (cols * cellSize)) / 2 + 10; // +10は元のpadding分
+            const startY = (shelfH - (rows * cellSize)) / 2 + 10;
+
+            const posX = startX + slot.c * cellSize + Math.random() * 10;
+            const posY = startY + slot.r * cellSize + Math.random() * 10;
+
+            // 座標を指定してアイテム生成
+            createItem(itemType, posX, posY);
         }
     }
 
-    function createItem(itemData) {
+    // 配列シャッフル用関数（フィッシャー–イェーツ）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // 引数に座標(x, y)を追加
+    function createItem(itemData, x, y) {
         const el = document.createElement('div');
         el.classList.add('item');
         el.textContent = itemData.icon;
         el.dataset.id = itemData.id;
 
-        // エリア内にランダム配置
-        const w = shelfArea.clientWidth - 70;
-        const h = shelfArea.clientHeight - 70;
-        const x = Math.random() * w;
-        const y = Math.random() * h + 10;
-
+        // 計算された座標に配置
         el.style.left = x + 'px';
         el.style.top = y + 'px';
-        el.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+        // 若干の回転は残す
+        el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
 
         shelfArea.appendChild(el);
         el.addEventListener('pointerdown', handlePointerDown);
@@ -443,6 +470,8 @@
         e.preventDefault();
         draggedItem = e.target;
         if (draggedItem.classList.contains('item-in-basket')) return;
+
+        draggedItem.style.transition = 'none'; // ドラッグ中はアニメーションOFF
 
         startX = parseFloat(draggedItem.style.left);
         startY = parseFloat(draggedItem.style.top);
@@ -498,13 +527,14 @@
     }
 
     function returnToShelf(item) {
+        // 戻るときはアニメーションON
         item.style.transition = 'top 0.3s, left 0.3s';
         item.style.left = startX + 'px';
         item.style.top = startY + 'px';
         setTimeout(() => {
             if(item.parentElement === document.body) {
                 shelfArea.appendChild(item);
-                item.style.transition = '';
+                item.style.transition = ''; // 棚に戻ったらOFF
             }
         }, 300);
     }
@@ -514,10 +544,10 @@
         basketContainer.appendChild(item);
         item.classList.add('item-in-basket');
         item.style.position = 'static';
+        item.style.transition = ''; // カゴ用のアニメーションスタイルに任せる
         itemsInBasket++;
     }
 
-    // --- 判定ボタン ---
     function checkFinalAnswer() {
         if (itemsInBasket === targetCount) {
             playTone(523.25, 'triangle', 0.1);
@@ -559,7 +589,6 @@
     function gameClear() {
         speak("すごい！ぜんぶ クリア！");
         finalScreen.style.display = 'flex';
-        // 紙吹雪
         for(let i=0; i<60; i++) {
             const c = document.createElement('div');
             c.className = 'confetti';
