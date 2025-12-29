@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>おかいものゲーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>おかいものゲーム（iPad対応版）</title>
     <style>
         /* --- 基本設定 --- */
         body {
@@ -14,18 +14,23 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            /* iPad/スマホのアドレスバー対策：dvhを使用 */
+            height: 100vh;
+            height: 100dvh; 
+            width: 100vw;
         }
 
         #game-container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            width: 100vw;
+            height: 100%;
+            width: 100%;
         }
 
         /* --- 進捗バー --- */
         #progress-area {
             height: 50px;
+            min-height: 50px;
             background-color: #fff8dc;
             display: flex;
             justify-content: center;
@@ -35,20 +40,21 @@
         .star { font-size: 24px; color: #ccc; margin: 0 8px; transition: 0.3s; }
         .star.active { color: #ffd700; transform: scale(1.3); text-shadow: 0 0 5px orange; }
 
-        /* --- 棚エリア --- */
+        /* --- 棚エリア（可変エリア） --- */
         #shelf-area {
-            flex: 1; 
+            flex: 1; /* 余ったスペースを全部使う */
             background-color: #ffe4b5;
             border-bottom: 5px solid #deb887;
             position: relative;
-            /* グリッド配置のためにpaddingを少し設定 */
             padding: 10px;
             box-sizing: border-box;
+            overflow: hidden; /* はみ出し防止 */
         }
 
         /* --- 中央エリア --- */
         #center-area {
-            height: 90px;
+            height: 80px;
+            min-height: 80px;
             background-color: #fff;
             display: flex;
             justify-content: space-between;
@@ -73,7 +79,7 @@
             color: white;
             font-size: 20px;
             font-weight: bold;
-            padding: 10px 30px;
+            padding: 10px 25px;
             border-radius: 30px;
             border: none;
             box-shadow: 0 4px #b33c00;
@@ -87,20 +93,27 @@
 
         /* --- カゴエリア --- */
         #basket-area {
-            height: 200px;
+            /* 固定高さではなく、画面サイズに応じて調整しやすくする */
+            height: 220px;
             background-color: #e0ffff;
             position: relative;
             display: flex;
             justify-content: center;
             align-items: flex-end;
+            
+            /* iPhone/iPadのホームバー対策 */
             padding-bottom: 10px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            
             transition: height 0.3s;
+            box-sizing: border-box;
+            z-index: 5;
         }
 
         #basket {
             width: 85%;
             max-width: 650px;
-            height: 180px;
+            height: 100%; /* 親要素に合わせる */
             border: 8px solid #8b4513;
             border-radius: 0 0 30px 30px;
             border-top: none;
@@ -109,13 +122,13 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            align-items: flex-end;
+            align-items: flex-end; /* 下から積む */
             align-content: flex-end;
             padding: 5px;
             gap: 5px;
-            transition: height 0.3s;
         }
         
+        /* カゴの取っ手（飾り） */
         #basket::before {
             content: '';
             position: absolute;
@@ -129,7 +142,7 @@
             pointer-events: none;
         }
 
-        /* --- アイテム（デフォルト：初級サイズ） --- */
+        /* --- アイテム --- */
         .item {
             width: 75px; 
             height: 75px;
@@ -142,7 +155,6 @@
             z-index: 100;
             filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
             touch-action: none;
-            /* 配置時のアニメーション */
             transition: transform 0.1s, top 0.3s, left 0.3s;
         }
 
@@ -152,33 +164,31 @@
             top: auto !important;
             transform: none !important;
             margin: 2px;
-            width: 60px; 
-            height: 60px;
-            font-size: 45px;
+            width: 55px; 
+            height: 55px;
+            font-size: 40px;
             cursor: pointer;
             animation: popIn 0.2s ease-out;
         }
 
-        /* ====== 中級（Hard）モード用のスタイル ====== */
+        /* ====== 中級（Hard）モード用の調整 ====== */
         body.mode-hard #basket-area {
-            height: 260px;
-        }
-        body.mode-hard #basket {
-            height: 240px;
+            /* 中級は数が多いので少しカゴエリアを広げる */
+            height: 280px; 
         }
         body.mode-hard .item {
-            width: 55px;
-            height: 55px;
-            font-size: 40px;
+            width: 60px;
+            height: 60px;
+            font-size: 45px;
         }
         body.mode-hard .item-in-basket {
             width: 45px;
             height: 45px;
-            font-size: 30px;
+            font-size: 32px;
             margin: 1px;
         }
 
-        /* オーバーレイ */
+        /* オーバーレイ（スタート画面・クリア画面） */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -348,12 +358,12 @@
         const randomIdx = Math.floor(Math.random() * itemsData.length);
         currentTargetItem = itemsData[randomIdx];
 
-        // ★変更点2：問題数の範囲を変更
+        // --- 修正1: 問題数の範囲変更 ---
         if (currentMode === 'easy') {
-            // 1〜5個
+            // 初級：1〜5個
             targetCount = Math.floor(Math.random() * 5) + 1;
         } else {
-            // 6〜10個
+            // 中級：6〜10個
             targetCount = Math.floor(Math.random() * 5) + 6;
         }
 
@@ -373,25 +383,22 @@
         });
     }
 
-    // ★変更点3：重なり防止のためのグリッド配置ロジック
+    // --- 修正2: グリッド配置による重なり防止 ---
     function spawnItems() {
         const isEasy = (currentMode === 'easy');
         // 生成する総数（初級12個、中級25個）
         const totalItemsToSpawn = isEasy ? 12 : 25;
         
-        // グリッドのセルサイズ設定（アイテムサイズ + 余白）
-        // 初級:75px+余白, 中級:55px+余白
+        // グリッドのセルサイズ設定
         const cellSize = isEasy ? 90 : 70; 
 
         // 棚のサイズから配置可能な列数・行数を計算
-        // padding分を引いて計算
         const shelfW = shelfArea.clientWidth - 20; 
         const shelfH = shelfArea.clientHeight - 20;
         const cols = Math.floor(shelfW / cellSize);
         const rows = Math.floor(shelfH / cellSize);
         const maxSlots = cols * rows;
 
-        // 実際に生成する数（マスの数を超えないように制限）
         const actualItems = Math.min(totalItemsToSpawn, maxSlots);
 
         // 1. 全ての可能なマスのリストを作成
@@ -401,7 +408,7 @@
                 availableSlots.push({ r: r, c: c });
             }
         }
-        // マスをシャッフルしてランダムに選べるようにする
+        // マスをシャッフル
         shuffleArray(availableSlots);
 
         // 正解アイテムの最低保証数
@@ -420,23 +427,22 @@
                 } while(itemType.id === currentTargetItem.id);
             }
 
-            // 2. シャッフルしたリストからマスを1つ取り出す（これで重ならない）
+            // 2. シャッフルしたリストからマスを1つ取り出す
             const slot = availableSlots.pop();
             
-            // マスの中での座標計算（少しランダムにずらして自然に見せる）
-            // 全体を中央寄せするための余白計算
-            const startX = (shelfW - (cols * cellSize)) / 2 + 10; // +10は元のpadding分
+            // マスの中での座標計算（全体を中央寄せするためのオフセット付き）
+            const startX = (shelfW - (cols * cellSize)) / 2 + 10;
             const startY = (shelfH - (rows * cellSize)) / 2 + 10;
 
+            // マス内で少しだけ位置をずらす（ランダム感）
             const posX = startX + slot.c * cellSize + Math.random() * 10;
             const posY = startY + slot.r * cellSize + Math.random() * 10;
 
-            // 座標を指定してアイテム生成
             createItem(itemType, posX, posY);
         }
     }
 
-    // 配列シャッフル用関数（フィッシャー–イェーツ）
+    // 配列シャッフル
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -444,17 +450,14 @@
         }
     }
 
-    // 引数に座標(x, y)を追加
     function createItem(itemData, x, y) {
         const el = document.createElement('div');
         el.classList.add('item');
         el.textContent = itemData.icon;
         el.dataset.id = itemData.id;
 
-        // 計算された座標に配置
         el.style.left = x + 'px';
         el.style.top = y + 'px';
-        // 若干の回転は残す
         el.style.transform = `rotate(${Math.random() * 30 - 15}deg)`;
 
         shelfArea.appendChild(el);
@@ -471,7 +474,7 @@
         draggedItem = e.target;
         if (draggedItem.classList.contains('item-in-basket')) return;
 
-        draggedItem.style.transition = 'none'; // ドラッグ中はアニメーションOFF
+        draggedItem.style.transition = 'none'; 
 
         startX = parseFloat(draggedItem.style.left);
         startY = parseFloat(draggedItem.style.top);
@@ -527,14 +530,13 @@
     }
 
     function returnToShelf(item) {
-        // 戻るときはアニメーションON
         item.style.transition = 'top 0.3s, left 0.3s';
         item.style.left = startX + 'px';
         item.style.top = startY + 'px';
         setTimeout(() => {
             if(item.parentElement === document.body) {
                 shelfArea.appendChild(item);
-                item.style.transition = ''; // 棚に戻ったらOFF
+                item.style.transition = ''; 
             }
         }, 300);
     }
@@ -544,7 +546,7 @@
         basketContainer.appendChild(item);
         item.classList.add('item-in-basket');
         item.style.position = 'static';
-        item.style.transition = ''; // カゴ用のアニメーションスタイルに任せる
+        item.style.transition = ''; 
         itemsInBasket++;
     }
 
